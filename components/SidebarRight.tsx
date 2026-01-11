@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Monitor, Box, DollarSign, ChevronsRight, ChevronsLeft,
   Camera, ChevronDown, Target, Move, User, Grid3X3,
   Sun, Sunset, Moon, Zap, Palette, Ban, Loader2,
-  Scan, UploadCloud, Crown, Download, Plus, MousePointer2
+  Scan, UploadCloud, Crown, Download, Plus, MousePointer2,
+  Layers, Armchair, Table, Sparkles, Filter,
+  ArrowUp, ArrowDown, Eye
 } from 'lucide-react';
 import { Button } from './Button';
 import { RenderNode, RoomSettings, BOQItem } from '../types';
@@ -32,6 +34,36 @@ interface SidebarRightProps {
   setSelectedObject: (v: string) => void;
 }
 
+// Mock Data for Material Library
+const MOCK_MATERIALS: Record<string, any[]> = {
+  floor: [
+    { id: 101, name: 'Royal Oak', category: 'Hardwood', texture: 'Matte Finish', img: 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=500', brand: 'Tarkett', sponsored: true },
+    { id: 102, name: 'Carrara Marble', category: 'Stone/Tile', texture: 'Polished', img: 'https://images.unsplash.com/photo-1598551460773-8a39832207b5?auto=format&fit=crop&q=80&w=500', brand: null },
+    { id: 103, name: 'Herringbone', category: 'Hardwood', texture: 'Satin', img: 'https://images.unsplash.com/photo-1622370701986-7a7024847250?auto=format&fit=crop&q=80&w=500', brand: null },
+    { id: 104, name: 'Grey Slate', category: 'Stone/Tile', texture: 'Rough', img: 'https://images.unsplash.com/photo-1521406837071-6c24f6cb7d3a?auto=format&fit=crop&q=80&w=500', brand: 'Daltile', sponsored: true },
+    { id: 105, name: 'Berber Wool', category: 'Carpet', texture: 'Soft', img: 'https://images.unsplash.com/photo-1628103630636-69485c2c7b50?auto=format&fit=crop&q=80&w=500', brand: null },
+  ],
+  wall: [
+    { id: 201, name: 'Swiss Coffee', category: 'Paint', texture: 'Eggshell', img: 'https://images.unsplash.com/photo-1588854337221-4cf9fa96059c?auto=format&fit=crop&q=80&w=500', brand: 'Benjamin Moore', sponsored: true },
+    { id: 202, name: 'Venetian Plaster', category: 'Plaster', texture: 'Smooth', img: 'https://images.unsplash.com/photo-1562916890-7d3550d53c7a?auto=format&fit=crop&q=80&w=500', brand: null },
+    { id: 203, name: 'Exposed Brick', category: 'Masonry', texture: 'Raw', img: 'https://images.unsplash.com/photo-1592346765798-8f8379207865?auto=format&fit=crop&q=80&w=500', brand: null },
+    { id: 204, name: 'Midnight Blue', category: 'Paint', texture: 'Matte', img: 'https://images.unsplash.com/photo-1572911993237-77443f550547?auto=format&fit=crop&q=80&w=500', brand: 'Farrow & Ball', sponsored: true },
+  ],
+  default: [
+    { id: 901, name: 'Grey Fabric', category: 'Fabric', texture: 'Woven', img: 'https://images.unsplash.com/photo-1552554867-68b3e8c15694?auto=format&fit=crop&q=80&w=500', brand: null },
+    { id: 902, name: 'Tan Leather', category: 'Leather', texture: 'Grain', img: 'https://images.unsplash.com/photo-1550254478-ead40cc54513?auto=format&fit=crop&q=80&w=500', brand: 'West Elm', sponsored: true },
+    { id: 903, name: 'Velvet Green', category: 'Fabric', texture: 'Plush', img: 'https://images.unsplash.com/photo-1617103996702-96ff29b1c467?auto=format&fit=crop&q=80&w=500', brand: null },
+  ]
+};
+
+const CATEGORIES: Record<string, string[]> = {
+  floor: ['All', 'Hardwood', 'Stone/Tile', 'Carpet', 'Vinyl'],
+  wall: ['All', 'Paint', 'Wallpaper', 'Plaster', 'Masonry'],
+  sofa: ['All', 'Fabric', 'Leather', 'Velvet', 'Boucle'],
+  table: ['All', 'Wood', 'Glass', 'Metal', 'Stone'],
+  default: ['All', 'Standard', 'Premium', 'New']
+};
+
 export const SidebarRight: React.FC<SidebarRightProps> = ({
   isCollapsed,
   onToggle,
@@ -48,7 +80,9 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
   selectedObject,
   setSelectedObject
 }) => {
-  // Static Data
+  const [activeFilter, setActiveFilter] = useState('All');
+
+  // Static Data for UI
   const viewpoints = ['Hero (Entry)', 'Reverse (Window)', 'Corner Perspective', 'Center Room'];
   const styles = ['Japandi', 'Modern Minimalist', 'Industrial', 'Bohemian', 'Scandinavian', 'Mid-Century'];
   const lightingOptions = [
@@ -58,27 +92,21 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
      { id: 'Studio', icon: Zap },
   ];
   const surfaceItems = [
-    { id: 'wall', name: 'Accent Wall', current: 'Off-White Matte', type: 'Surface', icon: Box },
-    { id: 'floor', name: 'Flooring', current: 'Light Oak Parquet', type: 'Surface', icon: Layers },
-    { id: 'sofa', name: 'Harmony Sofa', current: 'Grey Fabric', type: 'Object', icon: SofaIcon },
-    { id: 'table', name: 'Coffee Table', current: 'Glass & Wood', type: 'Object', icon: Box }
-  ];
-  const materials = [
-    { id: 1, name: 'Matte White', color: '#f5f5f5' },
-    { id: 2, name: 'Warm Beige', color: '#e5d0b1' },
-    { id: 3, name: 'Cool Grey', color: '#9ca3af' },
-    { id: 4, name: 'Charcoal', color: '#374151' },
-    { id: 5, name: 'Navy Blue', color: '#1e3a8a', premium: true },
-    { id: 6, name: 'Forest Green', color: '#14532d', premium: true },
-    { id: 7, name: 'Terracotta', color: '#9a3412', premium: true },
-    { id: 8, name: 'Concrete', color: '#57534e', premium: true },
-    { id: 9, name: 'Light Oak', color: '#d8b998' },
-    { id: 10, name: 'Walnut', color: '#5d4037' },
-    { id: 11, name: 'Brass', color: '#b5a642', premium: true },
-    { id: 12, name: 'Marble', color: '#e8e8e8', premium: true },
+    { id: 'wall', name: 'Accent Wall', type: 'Surface', icon: Box },
+    { id: 'floor', name: 'Flooring', type: 'Surface', icon: Layers },
+    { id: 'sofa', name: 'Harmony Sofa', type: 'Object', icon: Armchair },
+    { id: 'table', name: 'Coffee Table', type: 'Object', icon: Table }
   ];
 
   const selectedItemData = surfaceItems.find(i => i.id === selectedObject);
+  const currentMaterials = MOCK_MATERIALS[selectedObject] || MOCK_MATERIALS['default'];
+  const currentCategories = CATEGORIES[selectedObject] || CATEGORIES['default'];
+
+  // Filter Logic
+  const filteredMaterials = activeFilter === 'All' 
+    ? currentMaterials 
+    : currentMaterials.filter(m => m.category === activeFilter);
+
   const rightSidebarWidth = isCollapsed 
     ? 'w-[60px]' 
     : (activeTab === 'room' ? 'w-80' : 'w-[480px]');
@@ -158,255 +186,299 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
             </div>
           ) : (
             <>
-              {/* ROOM TAB (Standard Width) */}
+              {/* ROOM TAB (Pro-Minimal Redesign) */}
               {activeTab === 'room' && (
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-border">
+                <div className="flex flex-col h-full relative">
+                  <div className="flex-1 overflow-y-auto p-5 pb-24 space-y-8 scrollbar-thin scrollbar-thumb-border">
+                    
                     {/* Camera & Perspective */}
-                    <div className="bg-surface border border-border rounded-lg p-3">
-                      <h3 className="text-[10px] font-bold text-textMuted uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <Camera size={12} /> Camera & Perspective
-                      </h3>
+                    <section>
+                      <div className="flex items-center gap-2 mb-4">
+                         <Camera size={14} className="text-indigo-400" />
+                         <h3 className="text-[11px] font-bold tracking-widest text-textMuted uppercase">Camera & Perspective</h3>
+                      </div>
+
                       <div className="space-y-4">
-                        {/* Viewpoint */}
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-textMuted font-medium">VIEWPOINT</label>
-                          <div className="flex items-center gap-2">
-                            <div className="relative flex-1 group">
-                              <select 
-                                value={roomSettings.viewpoint}
-                                onChange={(e) => onUpdateSettings({ viewpoint: e.target.value })}
-                                className="w-full bg-surfaceHighlight border border-border rounded pl-2 pr-6 py-1.5 text-xs text-white appearance-none focus:outline-none focus:border-indigo-500 cursor-pointer"
-                              >
-                                {viewpoints.map(vp => <option key={vp} value={vp}>{vp}</option>)}
-                              </select>
-                              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none group-hover:text-white" />
-                            </div>
-                            <button 
-                              onClick={onOpenMap}
-                              className="p-1.5 rounded bg-surfaceHighlight border border-border text-textMuted hover:text-white hover:border-indigo-500/50 transition-colors"
-                              title="Edit on Map"
-                            >
-                              <Target size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Lens */}
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-textMuted font-medium">LENS WIDTH</label>
-                          <div className="flex bg-surfaceHighlight border border-border rounded p-0.5">
-                            {['0.5x', '1x', '2x'].map(l => (
-                              <button 
-                                key={l}
-                                onClick={() => onUpdateSettings({ lens: l })} 
-                                className={`flex-1 py-1 rounded-[2px] text-[10px] font-medium transition-all ${roomSettings.lens === l ? 'bg-indigo-600 text-white shadow-sm' : 'text-textMuted hover:text-white'}`}
-                              >
-                                {l === '0.5x' ? 'Wide' : l === '1x' ? 'Std' : 'Detail'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Height */}
-                        <div className="space-y-1.5">
-                          <label className="text-[9px] text-textMuted font-medium">HEIGHT</label>
-                          <div className="flex gap-2">
-                            {[
-                              { id: 'Low', icon: Move, rotate: 180 }, 
-                              { id: 'Eye-Level', icon: User }, 
-                              { id: 'Top-Down', icon: Grid3X3 }
-                            ].map((h) => (
-                              <button 
-                                key={h.id}
-                                onClick={() => onUpdateSettings({ angle: h.id })}
-                                className={`flex-1 flex flex-col items-center justify-center py-2 rounded border transition-all ${roomSettings.angle === h.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-surfaceHighlight border-border text-textMuted hover:border-white/20 hover:text-white'}`}
-                              >
-                                <h.icon size={14} className={h.rotate ? 'transform rotate-180' : ''} />
-                                <span className="text-[9px] mt-1">{h.id}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Lighting Scenario */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-white font-medium mb-1 border-b border-border/50 pb-2">
-                        <Sun size={14} className="text-indigo-400" />
-                        <h2 className="text-xs">Lighting Scenario</h2>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {lightingOptions.map((opt) => (
-                          <button
-                            key={opt.id}
-                            onClick={() => onUpdateSettings({ lightingScenario: opt.id })}
-                            className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all ${roomSettings.lightingScenario === opt.id ? 'bg-indigo-600/20 border-indigo-500/50 text-white shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'bg-surface border-border text-textMuted hover:border-white/20 hover:text-white'}`}
-                          >
-                            <opt.icon size={18} className={roomSettings.lightingScenario === opt.id ? 'text-indigo-400' : 'text-current'} />
-                            <span className="text-[10px] font-medium">{opt.id}</span>
-                          </button>
-                        ))}
-                      </div>
-                      {/* Mood */}
-                      <div className="space-y-2">
-                        <label className="text-[10px] text-textMuted uppercase tracking-wider font-semibold">Mood</label>
-                        <div className="flex bg-surface border border-border rounded-lg p-1">
-                          {['Airy', 'Standard', 'Moody'].map((m) => (
-                            <button
-                              key={m}
-                              onClick={() => onUpdateSettings({ mood: m })}
-                              className={`flex-1 py-1.5 text-[10px] font-medium rounded-md transition-all ${roomSettings.mood === m ? 'bg-surfaceHighlight text-white shadow-sm' : 'text-textMuted hover:text-white'}`}
-                            >
-                              {m}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Style & Prompt */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-white font-medium mb-1 border-b border-border/50 pb-2">
-                        <Palette size={14} className="text-indigo-400" />
-                        <h2 className="text-xs">Style & Prompt</h2>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] text-textMuted uppercase tracking-wider font-semibold">Architectural Style</label>
+                        {/* Viewpoint Input */}
                         <div className="relative group">
                           <select 
-                            value={roomSettings.style}
-                            onChange={(e) => onUpdateSettings({ style: e.target.value })}
-                            className="w-full bg-surface border border-border rounded-lg pl-3 pr-8 py-2.5 text-xs text-white appearance-none focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            value={roomSettings.viewpoint}
+                            onChange={(e) => onUpdateSettings({ viewpoint: e.target.value })}
+                            className="w-full bg-white/5 border border-transparent rounded-lg pl-3 pr-10 py-2.5 text-xs text-white appearance-none focus:outline-none focus:bg-white/10 transition-colors cursor-pointer"
                           >
-                            {styles.map(s => <option key={s} value={s}>{s}</option>)}
+                            {viewpoints.map(vp => <option key={vp} value={vp} className="bg-surface">{vp}</option>)}
                           </select>
-                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none group-hover:text-white" />
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                             <button onClick={(e) => { e.stopPropagation(); onOpenMap(); }} className="p-1.5 text-textMuted hover:text-white rounded-md hover:bg-white/10 pointer-events-auto" title="Edit on Map">
+                                <Target size={14} />
+                             </button>
+                          </div>
+                        </div>
+
+                        {/* Combined Camera Specs */}
+                        <div className="space-y-2">
+                           <label className="text-[10px] text-textMuted font-medium uppercase">Camera Specs</label>
+                           <div className="flex items-center bg-white/5 rounded-lg p-1 gap-1">
+                              {/* Lens Control */}
+                              <div className="flex-1 flex gap-0.5">
+                                 {['0.5x', '1x', '2x'].map((l) => {
+                                    const label = l === '0.5x' ? '16mm' : l === '1x' ? '35mm' : '85mm';
+                                    return (
+                                       <button 
+                                         key={l}
+                                         onClick={() => onUpdateSettings({ lens: l })} 
+                                         className={`flex-1 py-1.5 rounded-md text-[10px] font-medium transition-all ${roomSettings.lens === l ? 'bg-indigo-600 text-white shadow-sm' : 'text-textMuted hover:text-white hover:bg-white/5'}`}
+                                       >
+                                         {label}
+                                       </button>
+                                    )
+                                 })}
+                              </div>
+                              <div className="w-px h-4 bg-white/10 mx-1" />
+                              {/* Height Control */}
+                              <div className="flex gap-0.5">
+                                 {[
+                                    { id: 'Low', icon: ArrowUp, label: 'Low' }, 
+                                    { id: 'Eye-Level', icon: Eye, label: 'Eye' }, 
+                                    { id: 'Top-Down', icon: ArrowDown, label: 'High' }
+                                 ].map((h) => (
+                                    <button 
+                                      key={h.id}
+                                      onClick={() => onUpdateSettings({ angle: h.id })}
+                                      className={`p-1.5 px-2 rounded-md transition-all ${roomSettings.angle === h.id ? 'bg-indigo-600 text-white shadow-sm' : 'text-textMuted hover:text-white hover:bg-white/5'}`}
+                                      title={h.id}
+                                    >
+                                       <h.icon size={14} />
+                                    </button>
+                                 ))}
+                              </div>
+                           </div>
                         </div>
                       </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <label className="text-[10px] text-textMuted uppercase tracking-wider font-semibold">Creativity</label>
-                          <span className="text-[10px] text-indigo-400">{roomSettings.creativity < 30 ? 'Strict' : roomSettings.creativity > 70 ? 'Creative' : 'Balanced'}</span>
-                        </div>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="100" 
-                          value={roomSettings.creativity} 
-                          onChange={(e) => onUpdateSettings({ creativity: parseInt(e.target.value) })}
-                          className="w-full h-1.5 bg-surfaceHighlight rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                        />
-                        <div className="flex justify-between text-[8px] text-textMuted px-1">
-                          <span>Strict</span>
-                          <span>Balanced</span>
-                          <span>Creative</span>
-                        </div>
+                    </section>
+
+                    {/* Lighting Scenario */}
+                    <section>
+                      <div className="flex items-center gap-2 mb-4">
+                         <Sun size={14} className="text-indigo-400" />
+                         <h3 className="text-[11px] font-bold tracking-widest text-textMuted uppercase">Lighting Scenario</h3>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] text-textMuted uppercase tracking-wider font-semibold flex items-center gap-1">
-                          <Ban size={10} /> Exclude
-                        </label>
-                        <input 
-                          type="text" 
-                          value={roomSettings.excludePrompt}
-                          onChange={(e) => onUpdateSettings({ excludePrompt: e.target.value })}
-                          placeholder="e.g. No plants, no dark wood..."
-                          className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs text-white placeholder-textMuted/40 focus:outline-none focus:border-indigo-500 transition-colors"
-                        />
+                      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                         {lightingOptions.map((opt) => (
+                            <button
+                               key={opt.id}
+                               onClick={() => onUpdateSettings({ lightingScenario: opt.id })}
+                               className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border border-transparent ${
+                                  roomSettings.lightingScenario === opt.id 
+                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+                                  : 'bg-white/5 text-textMuted hover:text-white hover:bg-white/10'
+                               }`}
+                            >
+                               <opt.icon size={12} />
+                               {opt.id}
+                            </button>
+                         ))}
                       </div>
-                    </div>
+                    </section>
+
+                    {/* Style & Prompt */}
+                    <section>
+                       <div className="flex items-center gap-2 mb-4">
+                         <Palette size={14} className="text-indigo-400" />
+                         <h3 className="text-[11px] font-bold tracking-widest text-textMuted uppercase">Style & Prompt</h3>
+                      </div>
+                      
+                      <div className="space-y-6">
+                         {/* Style Dropdown */}
+                         <div className="relative group">
+                            <select 
+                               value={roomSettings.style}
+                               onChange={(e) => onUpdateSettings({ style: e.target.value })}
+                               className="w-full bg-white/5 border border-transparent rounded-lg pl-3 pr-10 py-2.5 text-xs text-white appearance-none focus:outline-none focus:bg-white/10 transition-colors cursor-pointer"
+                            >
+                               {styles.map(s => <option key={s} value={s} className="bg-surface">{s}</option>)}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                         </div>
+
+                         {/* Creativity Slider */}
+                         <div className="space-y-3">
+                            <div className="flex justify-between items-center text-[10px]">
+                               <label className="text-textMuted font-medium uppercase">Creativity</label>
+                               <span className="text-indigo-400 font-mono">{roomSettings.creativity}%</span>
+                            </div>
+                            <input 
+                               type="range" 
+                               min="0" 
+                               max="100" 
+                               value={roomSettings.creativity} 
+                               onChange={(e) => onUpdateSettings({ creativity: parseInt(e.target.value) })}
+                               className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400"
+                            />
+                         </div>
+
+                         {/* Exclude Input */}
+                         <div className="space-y-2">
+                            <label className="text-[10px] text-textMuted font-medium uppercase flex items-center gap-1">
+                               <Ban size={10} /> Negative Prompt
+                            </label>
+                            <input 
+                               type="text" 
+                               value={roomSettings.excludePrompt}
+                               onChange={(e) => onUpdateSettings({ excludePrompt: e.target.value })}
+                               placeholder="e.g. blur, watermark, low quality..."
+                               className="w-full bg-white/5 border border-transparent rounded-lg px-3 py-2 text-xs text-white placeholder-textMuted/30 focus:outline-none focus:bg-white/10 transition-colors"
+                            />
+                         </div>
+                      </div>
+                    </section>
+
                   </div>
                   
-                  <div className="p-4 border-t border-border bg-surface shrink-0 z-10">
-                    <Button 
-                      variant="primary" 
-                      onClick={onUpdateRender}
-                      disabled={isGenerating || !hasPendingChanges}
-                      className={`w-full py-3 text-xs font-semibold border-none shadow-lg transition-all duration-300 flex items-center justify-center gap-2 ${
-                        isGenerating 
-                        ? 'bg-surfaceHighlight text-textMuted cursor-not-allowed' 
-                        : hasPendingChanges 
-                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-900/20 animate-pulse' 
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-900/40'
-                      }`}
-                    >
-                      {isGenerating ? (
-                        <><Loader2 size={14} className="animate-spin" /> Generating...</>
-                      ) : hasPendingChanges ? (
-                        'Apply Changes'
-                      ) : (
-                        'Render Up to Date'
-                      )}
-                    </Button>
+                  {/* Floating Footer Button */}
+                  <div className="absolute bottom-6 left-6 right-6 z-20">
+                     <div className="absolute inset-0 bg-surface/50 backdrop-blur-md rounded-xl -z-10 blur-xl opacity-0"></div>
+                     <Button 
+                        variant="primary" 
+                        onClick={onUpdateRender}
+                        disabled={isGenerating}
+                        className={`w-full py-3 text-xs font-bold uppercase tracking-wide border-none shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center justify-center gap-2 rounded-xl ${
+                           isGenerating 
+                           ? 'bg-white/5 text-textMuted cursor-not-allowed' 
+                           : hasPendingChanges 
+                              ? 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-indigo-500/30' 
+                              : 'bg-white/10 hover:bg-white/20 text-white'
+                        }`}
+                     >
+                        {isGenerating ? (
+                           <><Loader2 size={14} className="animate-spin" /> Generating...</>
+                        ) : (
+                           <><Sparkles size={14} /> {hasPendingChanges ? 'Update View' : '✨ Update View'}</>
+                        )}
+                     </Button>
                   </div>
                 </div>
               )}
 
-              {/* SELECTION TAB (Wide Layout) */}
+              {/* SELECTION TAB (High-End Material Library Redesign) */}
               {activeTab === 'selection' && (
                 <div className="flex flex-col h-full animate-in slide-in-from-right-4 duration-200">
-                  {/* Top: Detected Surfaces Chips */}
-                  <div className="p-4 border-b border-border bg-surface shrink-0">
+                  
+                  {/* Top: Horizontal Surface Selector */}
+                  <div className="p-4 pb-2 border-b border-border bg-surface shrink-0">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-xs font-semibold text-textMuted uppercase tracking-wider flex items-center gap-2">
-                        <Scan size={12} /> Detected Surfaces
+                        <Scan size={12} /> Surfaces & Objects
                       </h3>
-                      <span className="text-[9px] bg-surfaceHighlight px-2 py-0.5 rounded text-textMuted">{surfaceItems.length} Found</span>
+                      <span className="text-[9px] text-textMuted">{surfaceItems.length} Detected</span>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                      {surfaceItems.map((item) => (
-                        <button 
-                          key={item.id}
-                          onClick={() => setSelectedObject(item.id)}
-                          className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${selectedObject === item.id ? 'bg-indigo-600/20 border-indigo-500 text-white ring-1 ring-indigo-500/50' : 'bg-surfaceHighlight/50 border-border text-textMuted hover:border-white/20 hover:text-white'}`}
-                        >
-                          <item.icon size={14} className={selectedObject === item.id ? 'text-indigo-400' : ''} />
-                          <span className="text-xs font-medium whitespace-nowrap">{item.name}</span>
-                        </button>
-                      ))}
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                      {surfaceItems.map((item) => {
+                        const isSelected = selectedObject === item.id;
+                        return (
+                          <button 
+                            key={item.id}
+                            onClick={() => { setSelectedObject(item.id); setActiveFilter('All'); }}
+                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/40' 
+                                : 'bg-surfaceHighlight border-border text-textMuted hover:border-white/20 hover:text-white'
+                            }`}
+                          >
+                            <item.icon size={14} className={isSelected ? 'text-white' : ''} />
+                            <span className="text-xs font-medium whitespace-nowrap">{item.name}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Bottom: Material Library */}
-                  <div className="flex-1 overflow-y-auto p-5">
+                  {/* Middle: Category Filters */}
+                  <div className="px-4 py-3 bg-surfaceHighlight/10 border-b border-border flex items-center gap-2 overflow-x-auto scrollbar-hide shrink-0">
+                    <Filter size={12} className="text-textMuted shrink-0" />
+                    <div className="h-4 w-px bg-border shrink-0" />
+                    {currentCategories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveFilter(cat)}
+                        className={`text-[10px] font-medium px-3 py-1 rounded-full border transition-all whitespace-nowrap ${
+                          activeFilter === cat
+                          ? 'bg-white text-black border-white'
+                          : 'bg-transparent text-textMuted border-transparent hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Main: Material Grid */}
+                  <div className="flex-1 overflow-y-auto p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xs font-bold text-white flex items-center gap-2">
-                        <Palette size={14} className="text-indigo-400" />
-                        Material Library
-                        <span className="text-[10px] font-normal text-textMuted ml-1">— {selectedItemData?.name}</span>
+                        <Sparkles size={14} className="text-amber-400" />
+                        Premium Library
                       </h3>
-                      <button className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1">
-                        <UploadCloud size={10} /> Upload Custom
-                      </button>
+                      <span className="text-[9px] text-textMuted uppercase tracking-wider">{filteredMaterials.length} Materials</span>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-3">
-                      {materials.map((mat) => (
-                        <div key={mat.id} className="group cursor-pointer relative">
-                          <div 
-                            className="aspect-square rounded-lg shadow-sm border border-white/10 group-hover:border-indigo-500/50 transition-all overflow-hidden relative"
-                            style={{ backgroundColor: mat.color }}
-                          >
-                            {/* Hover Overlay */}
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                              <span className="px-2 py-1 bg-black/80 text-white text-[9px] rounded border border-white/10">Apply</span>
-                            </div>
-                            {mat.premium && (
-                              <div className="absolute top-1 right-1 bg-amber-400 text-black p-0.5 rounded-full shadow-sm">
-                                <Crown size={8} fill="currentColor" />
-                              </div>
+                    <div className="grid grid-cols-2 gap-3 pb-8">
+                      {/* 1. Upload Custom Card */}
+                      <button className="aspect-[3/2] rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-textMuted hover:text-white hover:bg-surfaceHighlight/20 hover:border-white/20 transition-all group">
+                         <div className="p-2 bg-surfaceHighlight rounded-full group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <Plus size={18} />
+                         </div>
+                         <span className="text-[10px] font-medium">Upload Texture</span>
+                      </button>
+
+                      {/* Material Cards */}
+                      {filteredMaterials.map((mat) => (
+                        <div key={mat.id} className={`group cursor-pointer relative rounded-xl overflow-hidden shadow-sm transition-all hover:shadow-lg ${mat.sponsored ? 'ring-1 ring-amber-500/30' : 'ring-1 ring-white/10'}`}>
+                          
+                          {/* Image */}
+                          <div className="aspect-[3/2] w-full relative">
+                            <img 
+                              src={mat.img} 
+                              alt={mat.name} 
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                            />
+                            {/* Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                            
+                            {/* Brand Badge */}
+                            {mat.brand && (
+                               <div className={`absolute top-2 right-2 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider backdrop-blur-md border shadow-sm ${
+                                  mat.sponsored 
+                                  ? 'bg-amber-500/90 text-black border-amber-400' 
+                                  : 'bg-black/50 text-white border-white/20'
+                               }`}>
+                                  {mat.sponsored ? 'Sponsored' : mat.brand}
+                               </div>
                             )}
+
+                            {/* Active/Applied Indicator overlay on hover */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                               <button className="bg-white text-black text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                                  Apply
+                               </button>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-textMuted mt-1.5 font-medium truncate group-hover:text-white transition-colors">{mat.name}</p>
+
+                          {/* Footer Info */}
+                          <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
+                             <div className="flex justify-between items-end">
+                                <div>
+                                   <p className="text-xs font-bold text-white leading-tight group-hover:text-indigo-300 transition-colors">{mat.name}</p>
+                                   <p className="text-[9px] text-gray-400 mt-0.5">{mat.texture}</p>
+                                </div>
+                                {mat.sponsored && (
+                                   <Crown size={10} className="text-amber-400 mb-0.5" fill="currentColor" />
+                                )}
+                             </div>
+                          </div>
+
                         </div>
                       ))}
-                      {/* Add New Placeholder */}
-                      <div className="aspect-square rounded-lg border border-dashed border-border flex flex-col items-center justify-center gap-1 text-textMuted hover:text-white hover:bg-surfaceHighlight/20 hover:border-white/20 transition-all cursor-pointer">
-                        <Plus size={16} />
-                        <span className="text-[9px]">Add</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -470,11 +542,3 @@ export const SidebarRight: React.FC<SidebarRightProps> = ({
     </aside>
   );
 };
-
-// Icons needed due to extraction
-const Layers = ({ size, className }: { size: number, className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
-);
-const SofaIcon = ({ size, className }: { size: number, className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"/><path d="M2 11v5a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0Z"/><path d="M4 18v2"/><path d="M20 18v2"/><path d="M12 4v9"/></svg>
-);
