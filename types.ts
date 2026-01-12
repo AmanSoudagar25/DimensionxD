@@ -1,3 +1,4 @@
+
 export enum ProjectStatus {
   Active = 'Active',
   Archived = 'Archived',
@@ -49,6 +50,18 @@ export interface RoomSettings {
   style: string;
   creativity: number;
   excludePrompt: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  imageUrl: string;
+  category: string; // 'flooring', 'sofa', 'wall', 'lighting', etc.
+  isSponsored: boolean;
+  affiliateLink?: string;
+  price?: string; // Optional for display in catalog
+  texture?: string; // Optional metadata
 }
 
 export interface ProjectData {

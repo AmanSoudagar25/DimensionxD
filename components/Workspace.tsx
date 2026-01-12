@@ -7,11 +7,13 @@ import { CameraPositionModal } from './CameraPositionModal';
 import { SidebarLeft } from './SidebarLeft';
 import { SidebarRight } from './SidebarRight';
 import { InfiniteCanvasArea } from './InfiniteCanvasArea';
+import { LoginScreen } from './LoginScreen';
 
 interface WorkspaceProps {
   project: Project;
   onBack: () => void;
   isNewProject?: boolean;
+  isAuthenticated?: boolean; // Auth Guard Prop
 }
 
 // Initial Data States
@@ -34,23 +36,6 @@ const INITIAL_RENDERS: RenderNode[] = [
     title: 'Draft #2', 
     timestamp: '10:30 AM'
   },
-  { 
-    id: '3', 
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800', 
-    position: { x: 380, y: -50 },
-    settings: { lighting: 'Evening', style: 'Industrial' },
-    isSaved: false,
-    title: 'Draft #1', 
-    timestamp: '10:15 AM'
-  },
-];
-
-const INITIAL_BOQ = [
-  { name: 'Harmony Sofa', brand: 'West Elm', price: '₹1,25,000', commission: '₹4,500', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=100', sponsored: true },
-  { name: 'Oak Parquet', brand: 'Tarkett', price: '₹85,000', commission: '₹2,100', img: 'https://images.unsplash.com/photo-1581858726768-fd8a652aeb56?auto=format&fit=crop&q=80&w=100' },
-  { name: 'Noguchi Table', brand: 'Herman Miller', price: '₹1,12,000', commission: '₹5,000', img: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?auto=format&fit=crop&q=80&w=100' },
-  { name: 'Kelim Rug', brand: 'Jaipur Rugs', price: '₹28,000', commission: '₹800', img: 'https://images.unsplash.com/photo-1575414003591-ece8d141619a?auto=format&fit=crop&q=80&w=100' },
-  { name: 'Floor Lamp', brand: 'Flos', price: '₹45,000', commission: '₹1,200', img: 'https://images.unsplash.com/photo-1513506003013-d5347e0f95d1?auto=format&fit=crop&q=80&w=100' },
 ];
 
 const INITIAL_SETTINGS: RoomSettings = {
@@ -64,7 +49,33 @@ const INITIAL_SETTINGS: RoomSettings = {
   excludePrompt: ''
 };
 
-export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProject = false }) => {
+export const Workspace: React.FC<WorkspaceProps> = ({ 
+  project, 
+  onBack, 
+  isNewProject = false, 
+  isAuthenticated = true 
+}) => {
+  // --- Auth Guard Check ---
+  // In a real app, this might also trigger a redirect or a popup
+  if (!isAuthenticated) {
+    return (
+      <div className="relative h-screen w-full bg-black overflow-hidden">
+        {/* Render a blurred/dummy version of the workspace behind the login screen for effect */}
+        <div className="absolute inset-0 blur-sm pointer-events-none opacity-30">
+           <InfiniteCanvasArea 
+             renders={INITIAL_RENDERS} 
+             setRenders={() => {}} 
+             selectedRenderId={null} 
+             onSelect={() => {}} 
+             canvasTransform={{ x: 0, y: 0, scale: 1 }} 
+             setCanvasTransform={() => {}} 
+           />
+        </div>
+        <LoginScreen onLogin={() => console.log("Trigger login flow")} />
+      </div>
+    );
+  }
+
   // --- Sidebar States ---
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
   const [isRightCollapsed, setIsRightCollapsed] = useState(false);
@@ -73,7 +84,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
   // --- Central State Management ---
   const [projectData, setProjectData] = useState<ProjectData>({
     renders: INITIAL_RENDERS,
-    boq: INITIAL_BOQ,
+    boq: [],
     roomSettings: INITIAL_SETTINGS
   });
 
@@ -108,36 +119,10 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
   const handleUpdateRender = () => {
     if (!hasPendingChanges) return;
     setIsGenerating(true);
-    // Simulate generation delay
     setTimeout(() => {
        setIsGenerating(false);
        setHasPendingChanges(false);
-       // Add new mock render
-       const newId = Date.now().toString();
-       const newRender: RenderNode = {
-         id: newId,
-         imageUrl: 'https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=2700&auto=format&fit=crop',
-         position: { x: Math.random() * 200 - 100, y: Math.random() * 200 - 100 },
-         settings: { 
-           lighting: projectData.roomSettings.lightingScenario, 
-           style: projectData.roomSettings.style 
-         },
-         isSaved: false,
-         title: `Draft #${projectData.renders.length + 1}`,
-         timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-       };
-       
-       setProjectData(prev => ({
-         ...prev,
-         renders: [...prev.renders, newRender]
-       }));
-       setSelectedRenderId(newId);
     }, 2500);
-  };
-
-  const handleCameraApply = (data: any) => {
-    setIsCameraModalOpen(false);
-    updateRoomSettings({ viewpoint: 'Custom' });
   };
 
   const updateRoomSettings = (updates: Partial<RoomSettings>) => {
@@ -148,8 +133,6 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
   };
 
   // --- Effects ---
-
-  // Auto-trigger analysis for new projects
   useEffect(() => {
     if (isNewProject) {
       const timer = setTimeout(() => {
@@ -159,7 +142,6 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
     }
   }, [isNewProject]);
 
-  // Mark changes as pending when settings change
   useEffect(() => {
     setHasPendingChanges(true);
   }, [projectData.roomSettings]);
@@ -203,12 +185,12 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
           selectedRenderId={selectedRenderId}
           onSelect={setSelectedRenderId}
           onCenter={handleCenterOnRender}
+          isLoading={isGenerating} // Using generation state to simulate loading for now
         />
 
         <InfiniteCanvasArea 
           renders={projectData.renders}
           setRenders={(newRenders) => {
-             // Handle partial updates from drag events in canvas
              if (typeof newRenders === 'function') {
                 setProjectData(prev => ({ ...prev, renders: newRenders(prev.renders) }));
              } else {
@@ -239,6 +221,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
           
           selectedObject={selectedObject}
           setSelectedObject={setSelectedObject}
+          isLoading={isGenerating} // Using generation state to simulate loading
         />
       </div>
 
@@ -251,7 +234,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project, onBack, isNewProj
       <CameraPositionModal 
          isOpen={isCameraModalOpen} 
          onClose={() => setIsCameraModalOpen(false)}
-         onApply={handleCameraApply}
+         onApply={() => setIsCameraModalOpen(false)}
       />
     </div>
   );
